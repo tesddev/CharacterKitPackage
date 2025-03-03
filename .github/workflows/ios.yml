@@ -23,7 +23,6 @@ jobs:
 
     - name: Build and Test CharacterKit
       run: |
-        cd CharacterKitPackage
         swift build
         swift test
       
