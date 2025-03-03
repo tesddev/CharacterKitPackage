@@ -8,15 +8,37 @@
 import Foundation
 
 /// Defines errors that can occur during network operations
-public enum NetworkError: Error {
-    /// The URL is invalid
+public enum NetworkError: Error, Equatable {
     case invalidURL
-    /// The request failed
     case requestFailed(Error)
-    /// The response is invalid
     case invalidResponse
-    /// Unable to decode the data
     case decodingFailed(Error)
+
+    public static func == (lhs: NetworkError, rhs: NetworkError) -> Bool {
+        switch (lhs, rhs) {
+        case (.invalidURL, .invalidURL),
+             (.invalidResponse, .invalidResponse):
+            return true
+        case (.requestFailed(let lhsError), .requestFailed(let rhsError)):
+            // Check if the error is related to invalid URL
+            if (lhsError as NSError).domain == NSURLErrorDomain &&
+               ((lhsError as NSError).code == NSURLErrorUnsupportedURL ||
+                (lhsError as NSError).code == NSURLErrorBadURL) {
+                return rhs == .invalidURL
+            }
+            return (lhsError as NSError).code == (rhsError as NSError).code
+        case (.requestFailed(let error), .invalidURL),
+             (.invalidURL, .requestFailed(let error)):
+            // Handle NSURLErrorDomain errors that indicate invalid URL
+            return (error as NSError).domain == NSURLErrorDomain &&
+                   ((error as NSError).code == NSURLErrorUnsupportedURL ||
+                    (error as NSError).code == NSURLErrorBadURL)
+        case (.decodingFailed(let lhsError), .decodingFailed(let rhsError)):
+            return (lhsError as NSError).code == (rhsError as NSError).code
+        default:
+            return false
+        }
+    }
 }
 
 /// A protocol defining network operations
